@@ -26,7 +26,7 @@
             default: 'jessie'
         - string:
             name: EXT4FS_IMG_SZ
-            default: '2G'
+            default: '1800M'
         - string:
             name: PLATFORM_ARCH
             default: 'armhf'
@@ -88,7 +88,8 @@
             wget -q \
               http://repo.linaro.org/ubuntu/linaro-overlay/pool/main/a/android-tools/android-tools-fsutils_4.2.2+git20130218-3ubuntu41+linaro1_amd64.deb \
               http://repo.linaro.org/ubuntu/linaro-tools/pool/main/l/linaro-image-tools/linaro-image-tools_2015.11-1.linarojessie.1_amd64.deb \
-              http://repo.linaro.org/ubuntu/linaro-tools/pool/main/l/linaro-image-tools/python-linaro-image-tools_2015.11-1.linarojessie.1_all.deb
+              http://repo.linaro.org/ubuntu/linaro-tools/pool/main/l/linaro-image-tools/python-linaro-image-tools_2015.11-1.linarojessie.1_all.deb \
+              http://repo.linaro.org/ubuntu/linaro-overlay/pool/main/m/multipath-tools/kpartx_0.5.0-7ubuntu7.1_amd64.deb
             sudo dpkg -i --force-all *.deb
             rm -f *.deb
 
@@ -214,7 +215,7 @@
 
               # Create eMMC rootfs image(s)
               mkdir rootfs
-              for device in $(sudo kpartx -av out/${VENDOR}-${OS_FLAVOUR}-${rootfs}-${PLATFORM_NAME}-${VERSION}.sd.img | cut -d' ' -f3); do
+              for device in $(sudo kpartx -avs out/${VENDOR}-${OS_FLAVOUR}-${rootfs}-${PLATFORM_NAME}-${VERSION}.sd.img | cut -d' ' -f3); do
                 partition=$(echo ${device} | cut -d'p' -f3)
                 [ "${partition}" = "2" ] && sudo mount -o loop /dev/mapper/${device} rootfs
               done
@@ -229,10 +230,14 @@
             LABEL=qcom-firmware /lib/firmware ext4 defaults 0 0
             EOF
 
-              sudo make_ext4fs -o -L rootfs -l ${EXT4FS_IMG_SZ} -s out/${VENDOR}-${OS_FLAVOUR}-${rootfs}-${PLATFORM_NAME}-${VERSION}.img rootfs/
-              sudo umount rootfs
+              sudo mkfs.ext4 -L rootfs out/${VENDOR}-${OS_FLAVOUR}-${rootfs}-${PLATFORM_NAME}-${VERSION}.img.raw ${EXT4FS_IMG_SZ}
+              mkdir rootfs2
+              sudo mount -o loop out/${VENDOR}-${OS_FLAVOUR}-${rootfs}-${PLATFORM_NAME}-${VERSION}.img.raw rootfs2
+              sudo cp -a rootfs/* rootfs2
+              sudo umount rootfs2 rootfs
+              sudo ext2simg -v out/${VENDOR}-${OS_FLAVOUR}-${rootfs}-${PLATFORM_NAME}-${VERSION}.img.raw out/${VENDOR}-${OS_FLAVOUR}-${rootfs}-${PLATFORM_NAME}-${VERSION}.img
               sudo kpartx -dv out/${VENDOR}-${OS_FLAVOUR}-${rootfs}-${PLATFORM_NAME}-${VERSION}.sd.img
-              sudo rm -rf rootfs out/${VENDOR}-${OS_FLAVOUR}-${rootfs}-${PLATFORM_NAME}-${VERSION}.sd.img
+              sudo rm -rf rootfs out/${VENDOR}-${OS_FLAVOUR}-${rootfs}-${PLATFORM_NAME}-${VERSION}.sd.img rootfs2 out/${VENDOR}-${OS_FLAVOUR}-${rootfs}-${PLATFORM_NAME}-${VERSION}.img.raw
 
               # Compress image(s)
               gzip -9 out/${VENDOR}-${OS_FLAVOUR}-${rootfs}-${PLATFORM_NAME}-${VERSION}.img
