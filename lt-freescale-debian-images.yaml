@@ -44,12 +44,12 @@
             default: 'ttyMSM0'
         - string:
             name: KERNEL_BRANCH
-            default: 'utilite/devel'
+            default: 'lt-3.2-imx6'
     disabled: false
     display-name: 'Freescale Debian based images for Utilite iMX6'
     scm:
         - git:
-            url: https://github.com/utilite-computer/linux-kernel.git
+            url: https://github.com/AaronNGray/Freescale-kernel.git
             refspec: +refs/heads/${KERNEL_BRANCH}:refs/remotes/origin/${KERNEL_BRANCH}
             name: origin
             branches:
